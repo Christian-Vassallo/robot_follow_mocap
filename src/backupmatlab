@@ -1,0 +1,173 @@
+clear all
+close all
+clc
+
+global ActorMSG TBot1MSG TBot2MSG
+
+setenv('ROS_MASTER_URI','http://192.168.43.52:11311')
+setenv('ROS_IP','192.168.43.109')
+
+% Create a new node named /NODE and connect it to the master.
+%node = rosmatlab.node('matlab', [], [], 'rosIP', '10.35.12.62');
+%node = rosmatlab.node('matlab', 'http://10.35.12.62:11311');
+node = rosmatlab.node('matlab', '192.168.43.52', 11311);
+%node = rosmatlab.node('matlab', 'http://10.35.12.62:11311');
+
+% Publisher 
+publisher = rosmatlab.publisher('InitRobPos','std_msgs/Float32MultiArray',node);
+
+% Subscriber 
+subscriberActor = node.addSubscriber('ActorMoCapData2','std_msgs/Float64MultiArray',1);
+subscriberActor.setOnNewMessageListeners({@ActorGetData});
+
+subscriberTBot1 = node.addSubscriber('TBot1MoCapData','std_msgs/Float64MultiArray',1);
+subscriberTBot1.setOnNewMessageListeners({@TBot1GetData});
+
+subscriberTBot2 = node.addSubscriber('TBot2MoCapData','std_msgs/Float64MultiArray',1);
+subscriberTBot2.setOnNewMessageListeners({@TBot2GetData});
+
+% Create a new message of type std_msgs/String.
+msg = rosmatlab.message('std_msgs/Float32MultiArray',node);
+
+% Update the data field of the message and then publish the message
+% iteratively.
+
+display('waiting');
+% while (isempty(ActorMSG))
+%     % Waiting that the data arrives
+%     %disp(isempty(ActorMSG));
+%     pause(1/150)
+% end
+while (isempty(TBot1MSG))
+    % Waiting that the data arrives
+    %disp(isempty(ActorMSG));
+    pause(1/150)
+end
+disp('event');
+%load data2
+
+fcutoff=0.4;
+f=fcutoff * 2/150;
+
+% Extract Actor Data about POS and VEL
+ActorPx = filtrateTraj(ActorMSG(1:3:size(ActorMSG)), f, 1);
+ActorPy = filtrateTraj(ActorMSG(2:3:size(ActorMSG)), f, 1);
+ActorYaw = ActorMSG(3:3:size(ActorMSG));
+
+% Computing the velocity of the last meter
+ActorVx = derivate(ActorPx(find(ActorPy>ActorPy(end)-1.0)), 1/150);
+ActorVy = derivate(ActorPy(find(ActorPy>ActorPy(end)-1.0)), 1/150);
+
+% Extract TBot1 Data about POS and VEL
+TBot1Px = filtrateTraj(TBot1MSG(1:3:size(TBot1MSG)), f, 1);
+TBot1Py = filtrateTraj(TBot1MSG(2:3:size(TBot1MSG)), f, 1);
+TBot1Yaw = TBot1MSG(3:3:size(TBot1MSG));
+
+% Computing the velocity of the last meter
+TBot1Vx = derivate(TBot1Px(find(TBot1Py>TBot1Py(end)-1.0)), 1/150);
+TBot1Vy = derivate(TBot1Py(find(TBot1Py>TBot1Py(end)-1.0)), 1/150);
+
+TBot1Vx = derivate(TBot1Px, 1/150);
+TBot1Vy = derivate(TBot1Py, 1/150);
+
+TBot1Ax = derivate(TBot1Vx, 1/150);
+TBot1Ay = derivate(TBot1Vy, 1/150);
+
+tgammaMax = find(TBot1Ay==max(TBot1Ay))*1/150;
+
+% % Extract TBot1 Data about POS and VEL
+% TBot2Px = filtrateTraj(TBot2MSG(1:3:size(TBot2MSG)), f, 1);
+% TBot2Py = filtrateTraj(TBot2MSG(2:3:size(TBot2MSG)), f, 1);
+% TBot2Yaw = TBot2MSG(3:3:size(TBot2MSG));
+% 
+% % Computing the velocity of the last meter
+% TBot2Vx = derivate(TBot2Px(find(TBot2Py>TBot2Py(end)-1.0)), 1/150);
+% TBot2Vy = derivate(TBot2Py(find(TBot2Py>TBot2Py(end)-1.0)), 1/150);
+% 
+% TBot2Vx = derivate(TBot2Px, 1/150);
+% TBot2Vy = derivate(TBot2Py, 1/150);
+
+figure(1)
+hold on
+plot(TBot1Px,'r')
+plot(TBot1Py,'g');
+hold off
+
+figure(2)
+hold on
+plot(TBot1Vx,'r')
+plot(TBot1Vy,'g');
+hold off
+
+figure(3)
+hold on
+plot(TBot1Ax,'r')
+plot(TBot1Ay,'g');
+hold off
+
+% Position of Actor on X and Y at time 0 
+% (only last meter considered to compute the mean value)
+PAx0 = mean(ActorPx(find(ActorPy>ActorPy(end)-1.0)));
+PAy0 = mean(ActorPy(find(ActorPy>ActorPy(end)-1.0)));
+
+% Velocity of Actor on X and Y 
+% (only last meter considered to compute the mean value)
+VAx = mean(ActorVx);
+VAy = mean(ActorVy);
+
+% Define cross point 
+PAxf = PAx0;
+PAyf = 0.9166;
+PRy0 = PAyf;
+
+% Compute the time Actor Init-Goal given the velocity
+t = (PAyf - PAy0)/VAy;
+
+% Velocity of the Robot
+VRx = -0.68;
+VRy = 0;
+ARxmax = 0.4946;
+ARxmax = 0;
+tgammaMax = 1.2733;
+
+VRx * 2* tgammaMax / 2 + (t-2*tgammaMax)*VRx
+
+% Compute the mpd
+mpd = 0.1;
+
+% Compute Init Robot Pos for mpd = 0
+[PRx0mpd0, PRy0mpd0] = computeinitposrobot(VRx, VRy, 0, PAxf, PAyf, t, tgammaMax);
+
+% Compute Init Robot Pos for mpd set
+[PRx0mpdset, PRy0mpdset] = computeinitposrobot(VRx, VRy, mpd, PAxf, PAyf, t, tgammaMax);
+
+
+
+if (mpd<0)
+    PRx0 = PRx0mpd0 - abs(PRx0mpd0-PRx0mpdset);
+else
+    PRx0 = PRx0mpdset;
+end
+
+PRxy0 = [PRx0; PRy0];
+
+for i = 1:10000*10000
+    msg.setData(PRxy0);
+
+
+   publisher.publish(msg);
+    pause(0.030)
+end
+
+
+
+% Remove the subscriber from the node.
+node.removeSubscriber(subscriberActor);
+node.removeSubscriber(subscriberTBot1);
+node.removeSubscriber(subscriberTBot2);
+
+% Delete the master.
+
+
+%% Clean up workspace.
+

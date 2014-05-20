@@ -1,0 +1,31 @@
+<package>
+  <description brief="robot_follow_mocap">
+
+     robot_follow_mocap
+
+  </description>
+  <author>Yoshi</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+
+  <url>http://nourl</url>
+  <depend package="std_msgs"/>
+  <depend package="rospy"/>
+  <depend package="roscpp"/>
+  <depend package="actionlib"/>
+  <depend package="move_base"/>
+  <depend package="gmapping"/>
+  <depend package="turtlebot_bringup"/>
+
+  <depend package="sensor_msgs"/>
+  <depend package="nodelet"/>
+  <depend package="pcl_ros"/>
+  <depend package="visualization_msgs"/>
+  <depend package="move_base_msgs"/>
+
+  <rosdep name="libftdi-dev" />
+
+
+</package>
+
+
