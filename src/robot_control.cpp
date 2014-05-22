@@ -1,5 +1,3 @@
-/// Tbot1
-
 #include "ros/ros.h"
 #include <sstream>
 #include <sensor_msgs/Joy.h>
@@ -31,13 +29,12 @@
 #include "std_msgs/Int32MultiArray.h"
 #include "std_msgs/Float32MultiArray.h"
 
+
 #include "turtlemotionclass.hpp"
 #include "mocapmessenger.hpp"
 #include "trajectoryClass.hpp"
 #include "Robulab10Class.hpp"
-
-#include "API_Turtlebot.hpp"
-
+#include "Motion_API.hpp"
 
 
 void chatterCallbackTrigger(const std_msgs::Float32::ConstPtr &msg)
@@ -65,8 +62,8 @@ int main(int argc, char **argv)
     std::vector<double> Robot_config;
 
     dataMatlabCppInitRobotPose = chatmatlabnode.subscribe("InitRobPos", 2000, getDataMatlab);
-    mocapTBot.sub = mocapTBot.n.subscribe("/evart/Robolab10/PO", 2000, &MoCapMessenger::callbackFunction, &mocapTBot);
-    mocapActor.sub = mocapActor.n.subscribe("/evart/Robolab10/PO", 2000, &MoCapMessenger::callbackFunction, &mocapActor);
+    mocapTBot.sub = mocapTBot.n.subscribe("/evart/Robulab/PO", 2000, &MoCapMessenger::callbackFunction, &mocapTBot);
+    mocapActor.sub = mocapActor.n.subscribe("/evart/Robulab/PO", 2000, &MoCapMessenger::callbackFunction, &mocapActor);
     //mocapTBot.sub = mocapTBot.n.subscribe("/vicon/Robot1/endBone", 2000, &MoCapMessenger::callbackFunction, &mocapTBot);
     //mocapActor.sub = mocapActor.n.subscribe("/vicon/helmetLarge/endBone", 2000, &MoCapMessenger::callbackFunction, &mocapActor);
 
@@ -94,14 +91,16 @@ int main(int argc, char **argv)
 
 
     /// Line: 1
-    velocity_input = 0.3;
+    velocity_input = 0.5;
     starting_point_x = Robot_config[0];
-    end_point_x = Robot_config[0]+1.0;
+    end_point_x = Robot_config[0]-2;
     starting_point_y = Robot_config[1];
     end_point_y = Robot_config[1];
 
     check_event = 0;
     Line_Following_Control(velocity_input, starting_point_x, end_point_x, starting_point_y, end_point_y, check_event);
+
+
 
     return 0;
 }

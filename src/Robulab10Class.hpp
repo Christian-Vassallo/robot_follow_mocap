@@ -87,7 +87,7 @@ void Robulab10::move_robot(double lin_vel, double ang_vel){
 
     commandvelocity.str("");
     commandvelocity.clear();
-    commandvelocity << lin_vel*100 << " " << ang_vel*100 << std::endl;
+    commandvelocity << lin_vel*100 << " " << ang_vel*1000 << std::endl;
 
     message = "[0] Alive";
     sendto(fd, message.c_str() , message.length(), 0, (struct sockaddr *)&remaddr, slen);

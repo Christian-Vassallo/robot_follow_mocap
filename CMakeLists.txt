@@ -29,8 +29,18 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 
+set(SRCS
+  ./src/robot_control.cpp)
 
-rosbuild_add_executable(robotcontrol src/robot_control.cpp src/turtlemotionclass.hpp src/mocapmessenger.hpp src/trajectoryClass.hpp src/API_Turtlebot.hpp)
+set(HDRS
+  ./src/turtlemotionclass.hpp
+  ./src/mocapmessenger.hpp
+  ./src/trajectoryClass.hpp
+  ./src/Robulab10Class.hpp
+  ./src/Motion_API.hpp)
+
+rosbuild_add_executable(robotcontrol ${HDRS} ${SRCS})
+
 #target_link_libraries(robotcontrol ~/simulateur/lib/Linux/comm/libcomm_debug)
 
 #rosbuild_add_executable(event_check src/new_event_check.cpp)
