@@ -32,6 +32,7 @@ class Robulab10
         ~Robulab10();
         void move_robot(double, double);
         void stop_robot();
+        //void check_battery();
         int establish_connection();
 };
 
@@ -87,7 +88,7 @@ void Robulab10::move_robot(double lin_vel, double ang_vel){
 
     commandvelocity.str("");
     commandvelocity.clear();
-    commandvelocity << lin_vel*100 << " " << ang_vel*1000 << std::endl;
+    commandvelocity << lin_vel*100 << " " << ang_vel*100 << std::endl;
 
     message = "[0] Alive";
     sendto(fd, message.c_str() , message.length(), 0, (struct sockaddr *)&remaddr, slen);
@@ -121,6 +122,20 @@ void Robulab10::stop_robot(){
     printf("Sending message %s\n", message.c_str());
 
 }
+/*
+void Robulab10::check_battery(){
 
+    /// Here the commands to get battery level of the robot
+
+    message = "[77] Battery";
+    sendto(fd, message.c_str() , message.length(), 0, (struct sockaddr *)&remaddr, slen);
+    recvlen = recvfrom(fd, buf, BUFLEN, 0, (struct sockaddr *)&remaddr, &slen);
+    buf[recvlen] = 0;
+    printf("received message: \"%s\"\n", buf);
+
+
+
+}
+*/
 
 

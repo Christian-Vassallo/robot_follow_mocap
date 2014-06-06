@@ -11,12 +11,12 @@ int fleggs = 0;
 double RobotInitPosXY[2];
 double ActorPosStart[3];
 
-static bool stop_interrupt = true;
+static bool stop_interrupt = false;
 
 void my_handler(int s){
            Robulab10 Robot;
            printf("Caught signal %d\n",s);
-           stop_interrupt = false;
+           stop_interrupt = true;
 
            Robot.establish_connection();
            Robot.move_robot(0,0);
@@ -78,10 +78,7 @@ int Circle_Following_Control(double velocity_input, double Ox, double Oy, double
     mocapTBot.sub = mocapTBot.n.subscribe("/vicon/Robot1/endBone", 2000, &MoCapMessenger::callbackFunction, &mocapTBot);
 
 
-    ros::NodeHandle node_message;
-    ros::Subscriber sub = node_message.subscribe("chatter", 1000, chatterCallback);
-
-    /// Path Initialization
+        /// Path Initialization
     std::vector<std::vector<double> > path;
 /*
     /// Circle definition
@@ -178,13 +175,13 @@ int Circle_Following_Control(double velocity_input, double Ox, double Oy, double
         std::cout << "distance " << sqrt(pow(TTBot_configuration[0] - Ox,2)+pow(TTBot_configuration[1] - Oy,2)) << std::endl;
 
         /// Gains for a circle
-        if (l>0.2){
-            k2=4;
-            k3 =2*sqrt(2);
+        if (l>0.3){
+            k2=20;
+            k3 =sqrt(2);
             std::cout << "GAIN INCREASED TO GO CLOSE THE GOAL" << std::endl;
         }
         else{
-            k2=4;
+            k2=8;
             k3 = 2*sqrt(2);
         }
 
@@ -281,16 +278,21 @@ int Line_Following_Control(double velocity_input, double starting_point_x, doubl
 
     //mocapTBot.sub = mocapTBot.n.subscribe("/vicon/Robot1/endBone", 2000, &MoCapMessenger::callbackFunction, &mocapTBot);
     //mocapActor.sub = mocapActor.n.subscribe("/vicon/helmetLarge/endBone", 2000, &MoCapMessenger::callbackFunction, &mocapActor);
-    mocapTBot.sub = mocapTBot.n.subscribe("/evart/Robulab/PO", 2000, &MoCapMessenger::callbackFunction, &mocapTBot);
-    mocapActor.sub = mocapActor.n.subscribe("/evart/Robulab/PO", 2000, &MoCapMessenger::callbackFunction, &mocapActor);
+    mocapTBot.sub = mocapTBot.n.subscribe("/evart/RobulabC/PO", 2000, &MoCapMessenger::callbackFunction, &mocapTBot);
+    mocapActor.sub = mocapActor.n.subscribe("/evart/RobulabC/PO", 2000, &MoCapMessenger::callbackFunction, &mocapActor);
 
     //ros::Rate loop_rate(1000);
     ros::NodeHandle node_message;
-    ros::Subscriber sub = node_message.subscribe("chatter", 1000, chatterCallback);
-
+    //ros::Subscriber sub = node_message.subscribe("chatter", 1000, chatterCallback);
+    ros::Publisher robochat = node_message.advertise<std_msgs::Float64MultiArray>("robotState", 1);
+    ros::Publisher goalchat = node_message.advertise<std_msgs::Float64MultiArray>("goalState", 1);
 
     /// Path Initialization
     std::vector<std::vector<double> > path;
+    std::cout << "\n\n-----------------------------------------" << std::endl;
+    std::cout << " PATH FOLLOWING CONTROL: LINE PATH" << std::endl;
+    std::cout << "-----------------------------------------" << std::endl;
+
     std::cout << "Creating a line path from ( " << starting_point_x << " ; " << starting_point_y << " ) to (" << end_point_x << " ; " << end_point_y << " ) " << std::endl;
     path = pathobject.get_line_path(starting_point_x, starting_point_y, end_point_x, end_point_y, 1000);
     std::cout << "Line Path Created." << std::endl;
@@ -298,6 +300,7 @@ int Line_Following_Control(double velocity_input, double starting_point_x, doubl
     /// Path Following Control - LINE
 
     unsigned int config_t = 0;
+    bool goal_reached = false;
     double distance_point_to_point;
     double c, l, omega;
     double theta_desired, theta_tilda, u, v;
@@ -305,30 +308,72 @@ int Line_Following_Control(double velocity_input, double starting_point_x, doubl
     int stop_flag = 0;
     double k2, k3;
     double linecrossingYpos = -4.19;
-    double timenowdouble, starttime;
+    double timenowdouble;
     double angle_robot_nearestpointpath;
-
+    double _THREESHOLD = 0.05;
 
     u = 0;
-    v = velocity_input;
+    v = 0.8;
 
     /// Definition of the parameters (c and gains)
-    k2=4;
-    k3 =2*sqrt(2);
+    /// k2: influences position precision
+    /// k3: influences orientation precision
+
+    //changing the gain according to linear velocity
+    if(v<0.35){
+      k2=8;
+      k3 =4*sqrt(2);
+      }
+    else{
+        if(v<0.75){
+            k2=6;
+            k3 =2.2*sqrt(2);
+          }
+        else if(v<0.85){
+               k2=6;
+               k3 =1.75*sqrt(2);
+          }
+        else if(v<1){
+               k2=2.85;
+               k3 =1.75*sqrt(2);
+          }
+    }
     c = 0;
 
     /// Delay before to get information from MoCap (to avoid null data)
     std::cout << "... Initilization ..." << std::endl;
-
-    timenowdouble = time(NULL)+0.3;
+    std::cout << "... Gain - k2: " << k2 << " k3: " << k3 << std::endl;
+    timenowdouble = time(NULL)+0.5;
     while(time(NULL)<timenowdouble)
         ros::spinOnce();
 
-    starttime = (double)time(NULL);
+    std_msgs::Float64MultiArray robotState;
+    std_msgs::Float64MultiArray goalState;
+
+    // The message is structured such that
+    // 0: x position
+    // 1: y position
+    // 2: rot_z orientation
+    // 3: velocity control
+    // 4: omega control
+    robotState.data.resize(5);
+
+    // The message is structured such that
+    // 0: x position INIT
+    // 1: y position INIT
+    // 2: x position GOAL
+    // 3: y position GOAL
+    // 4: threeshold area
+    goalState.data.resize(5);
+
+    goalState.data[0] = starting_point_x;
+    goalState.data[1] = starting_point_y;
+    goalState.data[2] = end_point_x;
+    goalState.data[3] = end_point_y;
+    goalState.data[4] = _THREESHOLD;
 
     /// PATH FOLLOWING CONTROL
-    while(ros::ok() && stop_flag==0 && stop_interrupt==true){
-        std_msgs::Int32 msg;
+    while(ros::ok() && goal_reached == false && stop_interrupt==false){
 
         l = 9999;
 
@@ -406,19 +451,18 @@ int Line_Following_Control(double velocity_input, double starting_point_x, doubl
         }
 
         /// Check if the GOAL is reached
-        if ((Robot_configuration[0] > end_point_x-0.05) && (Robot_configuration[0] < end_point_x+0.05) && (Robot_configuration[1] > end_point_y-0.1 && Robot_configuration[1] < end_point_y+0.1)){
-        //if (Robot_configuration[0]<0){
-            std::cout << "-- GOAL -- " << std::endl;
-            Robot.move_robot(0,0);
-            return 0;
+        if ((Robot_configuration[0] > end_point_x-_THREESHOLD) && (Robot_configuration[0] < end_point_x+_THREESHOLD) && (Robot_configuration[1] > end_point_y-_THREESHOLD && Robot_configuration[1] < end_point_y+_THREESHOLD)){
+            std::cout << "-- GOAL REACHED -- " << std::endl;
+            Robot.move_robot(0,0); // Stop the Robot (if Robulab)
+            goal_reached = true;
         }
 
 
         /// Check the closest configurations of the path to the Robot
-        if(config_t >= path.size()-5)
+        if(config_t >= path.size()-3)
             config_t = 0;
         else
-            config_t = config_t+5;
+            config_t = config_t+3;
 
         theta_desired = path[config_t][2];
         theta_tilda = TTBot_yaw - theta_desired;   /// error
@@ -430,47 +474,35 @@ int Line_Following_Control(double velocity_input, double starting_point_x, doubl
                 theta_tilda = theta_tilda - 2*M_PI;
         }
 
+        /// Non Linear: u = -k2vl(sinthetatilda/thetatilda) - k3|v|thetatilda
+        u = -k2 * v * l * (sin(theta_tilda)/theta_tilda) - k3*v*theta_tilda;
+
+        /// Linear Control: u = -k2vl - k3|v|thetatilda
+        //u = -k2 * v * l - k3 * v * theta_tilda;
+
+        omega = u + (v*cos(theta_tilda)*c/(1-c*l));
+
         // Some print out
         /// Print only when the robot moves
         if (check_event==1 || (check_event==0 && Actor_configuration[1]>linecrossingYpos)){
-            //std::cout << "theta tilda: " << theta_tilda << " TB " << TTBot_yaw << " Td " << theta_desired << std::endl;
-            std::cout << " --------------- " << ((double)time(NULL)-starttime) << " --------------- " << std::endl;
+            std::cout << " ----------------------------------------- " << std::endl;
             std::cout << "robot config x: " << Robot_configuration[0] << " y : " << Robot_configuration[1] << " th: " << TTBot_yaw << std::endl;
             std::cout << "goal config x: " << path[config_t][0] << " y: " << path[config_t][1] << " th " << path[config_t][2] << std::endl;
+            std::cout << "GOAL x: " << end_point_x << " y: " << end_point_y << std::endl;
+            std::cout << "Robot controls - v: " << v << " omega: " << omega << std::endl;
             std::cout << " ----------------------------------------- " << std::endl;
-            //std::cout << "distance " << l << std::endl; // check the sign of L
-            //std::cout << " x: " << path[config_t][0] << " y : " << path[config_t][1] << "th: " << path[config_t][2] << " config: " << config_t << " dist: " << l << std::endl;
         }
 
-        /* // To analise the differences between the two controls
-        std::cout << "Linear: " << -k2 * v * l - k3 * v * theta_tilda << std::endl;
-        std::cout << "NL :" << -k2 * v * l * (sin(theta_tilda)/theta_tilda) - k3*v*theta_tilda << std::endl;
-        */
-
-        /// Non Linear: u = -k2vl(sinthetatilda/thetatilda) - k3|v|thetatilda
-        u = -k2 * v * l * sin(theta_tilda)/theta_tilda - k3*v*theta_tilda;
-
-        /// Linear Control: u = -k2vl - k3|v|thetatilda
-        // u = -k2 * v * l - k3 * v * theta_tilda;
-
-        omega = u + (v*cos(theta_tilda)*c/(1-c*l));
-        //omega = 10 * omega;
-
-        //std::cout << "vel_x : " << turtlebot->move_cmd.linear.x << " omega: " << turtlebot->move_cmd.angular.z << std::endl;
-
-        std::cout << "omega: " << omega << std::endl;
         /// Security Check
         if(omega>1000*100){
-            std::cout << "---- SECURITY STOP ---- " << std::endl;
+            std::cout << "---- SECURITY STOP: omega too high, probably diverging---- " << std::endl;
             return -1;
         }
         else{ /// MOVE!
-            std::cout << "move " << v << " " << omega << std::endl;
-                Robot.move_robot(v, omega);
+           Robot.move_robot(v, omega);
         }
 
-        //loop_rate.sleep();
-        ros::Duration(0.01).sleep();
+        ros::Duration(0.03).sleep();
 
 /*
         if(check_event){
@@ -483,13 +515,29 @@ int Line_Following_Control(double velocity_input, double starting_point_x, doubl
             }
         }
         */
-        YAW_DOT.push_back(TTBot_yaw);
+
+        // Publish Robot and goal Configuration Data
+        robotState.data[0] = Robot_configuration[0];
+        robotState.data[1] = Robot_configuration[1];
+        robotState.data[2] = Robot_configuration[2];
+        robotState.data[3] = v;
+        robotState.data[4] = omega;
+
+        //
+        robochat.publish(robotState);
+        goalchat.publish(goalState);
+
      }
     std::cout << "out" << std::endl;
 
     Robot.move_robot(0, 0);
-    //for(unsigned int k=0; k<YAW_DOT.size();k++)
-     // std::cout << YAW_DOT[k] << std::endl;
+
+    robotState.data[0] = 999;
+    std::cout << "Send END COMMAND " << std::endl;
+    for (unsigned int j=0; j<10; ++j)
+      robochat.publish(robotState);
+
+
 
     return 0;
 }
