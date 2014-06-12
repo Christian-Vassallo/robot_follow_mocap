@@ -17,6 +17,7 @@ class MoCapMessenger
         Matrix3f robotRoffset;
         Matrix3f worldRoffset;
         Vector3f angles;
+        Vector3f item_XY_YAW_data_Eigen;
 
 
     public:
@@ -29,8 +30,13 @@ class MoCapMessenger
         double * get_item_position();
         double * get_item_orientation();
         std::vector<double> item_XY_YAW_configuration();
-        std::vector<double> item_XY_velocity(double, double, int);
+        Vector3f item_XY_YAW_configuration_Eigen();
+
         std::vector<double> item_XY_YAW_configuration_OFFSET(double offset);
+        Vector3f item_XY_YAW_configuration_OFFSET_Eigen(double offset);
+
+        std::vector<double> item_XY_velocity(double, double, int);
+
 
 };
 
@@ -102,6 +108,18 @@ std::vector<double> MoCapMessenger::item_XY_YAW_configuration(){
     return item_XY_YAW_data;
 }
 
+
+Vector3f MoCapMessenger::item_XY_YAW_configuration_Eigen(){
+    item_XY_YAW_data_Eigen.setZero();
+
+    /// Set the position XY
+    item_XY_YAW_data_Eigen(0) = _item_position[0];
+    item_XY_YAW_data_Eigen(1) = _item_position[1];
+    item_XY_YAW_data_Eigen(2) = std::atan2(2 * (_item_orientation[3]*_item_orientation[2] + _item_orientation[0]*_item_orientation[1]), 1 - 2 * (_item_orientation[1]*_item_orientation[1] + _item_orientation[2]*_item_orientation[2]));
+
+    return item_XY_YAW_data_Eigen;
+}
+
 std::vector<double> MoCapMessenger::item_XY_YAW_configuration_OFFSET(double offset){
     item_XY_YAW_data.clear();
 
@@ -146,6 +164,38 @@ std::vector<double> MoCapMessenger::item_XY_YAW_configuration_OFFSET(double offs
     item_XY_YAW_data.push_back(angles[2]);
 
     return item_XY_YAW_data;
+}
+
+Vector3f MoCapMessenger::item_XY_YAW_configuration_OFFSET_Eigen(double offset){
+    item_XY_YAW_data_Eigen.setZero();
+
+    /// Compute the rotation matrix from quaternion
+    worldRrobot(0,0) = 2 * (_item_orientation[3]*_item_orientation[3] + _item_orientation[0]*_item_orientation[0]) - 1;
+    worldRrobot(0,1) = 2 * (_item_orientation[0]*_item_orientation[1] - _item_orientation[3]*_item_orientation[2]);
+    worldRrobot(0,2) = 2 * (_item_orientation[0]*_item_orientation[2] + _item_orientation[3]*_item_orientation[1]);
+    worldRrobot(1,0) = 2 * (_item_orientation[0]*_item_orientation[1] + _item_orientation[3]*_item_orientation[2]);
+    worldRrobot(1,1) = 2 * (_item_orientation[3]*_item_orientation[3] + _item_orientation[1]*_item_orientation[1]) - 1;
+    worldRrobot(1,2) = 2 * (_item_orientation[1]*_item_orientation[2] - _item_orientation[3]*_item_orientation[0]);
+    worldRrobot(2,0) = 2 * (_item_orientation[0]*_item_orientation[2] - _item_orientation[3]*_item_orientation[1]);
+    worldRrobot(2,1) = 2 * (_item_orientation[1]*_item_orientation[2] + _item_orientation[3]*_item_orientation[0]);
+    worldRrobot(2,2) = 2 * (_item_orientation[3]*_item_orientation[3] + _item_orientation[2]*_item_orientation[2]) - 1;
+
+    // Rotation Matrix offset
+    robotRoffset = AngleAxisf(0, Vector3f::UnitX())
+        * AngleAxisf(0, Vector3f::UnitY())
+        * AngleAxisf(offset, Vector3f::UnitZ());
+
+    // Rotation matrix final
+    worldRoffset = worldRrobot * robotRoffset;
+
+    angles = worldRoffset.eulerAngles(0, 1, 2);
+
+    /// Set the position XY
+    item_XY_YAW_data_Eigen(0) = _item_position[0];
+    item_XY_YAW_data_Eigen(1) = _item_position[1];
+    item_XY_YAW_data_Eigen(2) = angles[2];
+
+    return item_XY_YAW_data_Eigen;
 }
 
 std::vector<double> MoCapMessenger::item_XY_velocity(double x_before, double y_before, int time_before){

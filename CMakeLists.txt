@@ -29,17 +29,36 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 
-set(SRCS
-  ./src/robot_control.cpp)
+# Path Following
+set(SRCS1
+    ./src/robot_control.cpp)
+
+# Kalmen and Butt filter for walking velocity estimatio
+set(SRCS2
+    ./src/velocity_estimation.cpp)
+
+# Random staff
+set(SRCS3
+    ./src/new_event_check.cpp)
+
+# Tracking control
+set(SRCS4
+    ./src/tracking_control.cpp)
 
 set(HDRS
   ./src/turtlemotionclass.hpp
   ./src/mocapmessenger.hpp
   ./src/trajectoryClass.hpp
   ./src/Robulab10Class.hpp
-  ./src/Motion_API.hpp)
+  ./src/Motion_API.hpp
+  ./src/tracking_API.hpp
+   )
 
-rosbuild_add_executable(robotcontrol ${HDRS} ${SRCS})
+rosbuild_add_executable(robotcontrol ${HDRS} ${SRCS1})
+rosbuild_add_executable(velocitykalman ${HDRS} ${SRCS2})
+rosbuild_add_executable(eventcheck ${HDRS} ${SRCS3})
+rosbuild_add_executable(trackingcontrol ${HDRS} ${SRCS4})
+
 
 #target_link_libraries(robotcontrol ~/simulateur/lib/Linux/comm/libcomm_debug)
 

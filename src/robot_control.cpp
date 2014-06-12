@@ -104,7 +104,6 @@ int main(int argc, char **argv)
 */
 
 
-
     /// Circle: 1
     velocity_input = 0.55;
     Ox = 0.45;
@@ -116,7 +115,7 @@ int main(int argc, char **argv)
 
 
     /// Line: 1
-/*
+
     velocity_input = 0.5;
     starting_point_x = Robot_config[0];
     end_point_x = Robot_config[0]-2.5;
@@ -124,7 +123,9 @@ int main(int argc, char **argv)
     end_point_y = Robot_config[1];
     check_event = 1;
     Line_Following_Control(velocity_input, starting_point_x, end_point_x, starting_point_y, end_point_y, check_event);
-*/
+
+
+
 /*
     velocity_input = 0.3;
     starting_point_x = 1.5;//Robot_config[0];
