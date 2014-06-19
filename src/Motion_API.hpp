@@ -10,6 +10,7 @@ void RotateRobot (TurtlebotMotion *turtlebot);
 int fleggs = 0;
 double RobotInitPosXY[2];
 double ActorPosStart[3];
+double MatlabData[4];
 
 static bool stop_interrupt = false;
 
@@ -34,7 +35,7 @@ void getDataMatlab(const std_msgs::Float32MultiArray::ConstPtr& array)
     // print all the remaining numbers
     for(std::vector<float>::const_iterator it = array->data.begin(); it != array->data.end(); ++it)
     {
-        RobotInitPosXY[i] = *it;
+        MatlabData[i] = *it;
         i++;
     }
 

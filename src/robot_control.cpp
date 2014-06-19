@@ -11,6 +11,7 @@
 #include <actionlib/client/simple_action_client.h>
 #include <time.h>
 #include <string.h>
+#include <fstream>
 
 #include <Eigen/Cholesky>
 #include <Eigen/LU>
@@ -62,15 +63,15 @@ int main(int argc, char **argv)
     std::vector<double> Robot_config;
 
     // Init Mocap
-    dataMatlabCppInitRobotPose = chatmatlabnode.subscribe("InitRobPos", 2000, getDataMatlab);
-    mocapTBot.sub = mocapTBot.n.subscribe("/evart/RobulabC/PO", 2000, &MoCapMessenger::callbackFunction, &mocapTBot);
-    mocapActor.sub = mocapActor.n.subscribe("/evart/RobulabC/PO", 2000, &MoCapMessenger::callbackFunction, &mocapActor);
+///    dataMatlabCppInitRobotPose = chatmatlabnode.subscribe("InitRobPos", 2000, getDataMatlab);
+///    mocapTBot.sub = mocapTBot.n.subscribe("/evart/RobulabC/PO", 2000, &MoCapMessenger::callbackFunction, &mocapTBot);
+///    mocapActor.sub = mocapActor.n.subscribe("/evart/RobulabC/PO", 2000, &MoCapMessenger::callbackFunction, &mocapActor);
     //mocapTBot.sub = mocapTBot.n.subscribe("/vicon/Robot1/endBone", 2000, &MoCapMessenger::callbackFunction, &mocapTBot);
     //mocapActor.sub = mocapActor.n.subscribe("/vicon/helmetLarge/endBone", 2000, &MoCapMessenger::callbackFunction, &mocapActor);
 
     // Init Robot
     //Robot.establish_connection();
-
+/*
     std::cout << "Initialization Robot." << std::flush;
     //Robot.check_battery();
 
@@ -90,7 +91,7 @@ int main(int argc, char **argv)
         return -1;}
     else
       std::cout << " // DONE // Robot Status [x: " << Robot_config[0] << " ; y: " << Robot_config[1] << " ; th: " << Robot_config[2] << "] //" << std::endl;
-
+*//// fino a QUI
     /*
     std::cout << "Connecting with MATLAB." << std::flush;
     timenow = time(NULL)+1;
@@ -104,16 +105,6 @@ int main(int argc, char **argv)
 */
 
 
-    /// Circle: 1
-    velocity_input = 0.55;
-    Ox = 0.45;
-    Oy = -6;
-    radius = 1.0;
-    //Circle_Following_Control(&tbm, velocity_input, Ox, Oy, radius, check_event);
-
-
-
-
     /// Line: 1
 
     velocity_input = 0.5;
@@ -122,50 +113,25 @@ int main(int argc, char **argv)
     starting_point_y = Robot_config[1];
     end_point_y = Robot_config[1];
     check_event = 1;
-    Line_Following_Control(velocity_input, starting_point_x, end_point_x, starting_point_y, end_point_y, check_event);
-
+    //Line_Following_Control(velocity_input, starting_point_x, end_point_x, starting_point_y, end_point_y, check_event);
 
 
 /*
-    velocity_input = 0.3;
-    starting_point_x = 1.5;//Robot_config[0];
-    end_point_x = -1.5;//Robot_config[0]+2;
-    starting_point_y = 1.5; //Robot_config[1];
-    end_point_y = 1.5;//Robot_config[1]-1.5;
-    check_event = 0;
-    Line_Following_Control(velocity_input, starting_point_x, end_point_x, starting_point_y, end_point_y, check_event);
+    std::ifstream is("file.csv");
+    std::cout << "letto" << std::endl;
+    std::cout << is << std::endl;
+    std::string line;
+    while (std::getline(is, line))
+    {
+        const char *begin = line.c_str();
 
-    velocity_input = 0.3;
-    starting_point_x = -1.5;//Robot_config[0];
-    end_point_x = -1.5;//Robot_config[0]+2;
-    starting_point_y = 1.5; //Robot_config[1];
-    end_point_y = -1;//Robot_config[1]-1.5;
-    check_event = 0;
-    Line_Following_Control(velocity_input, starting_point_x, end_point_x, starting_point_y, end_point_y, check_event);
-
-    velocity_input = 0.3;
-    starting_point_x = -1.5;//Robot_config[0];
-    end_point_x = 1.5;//Robot_config[0]+2;
-    starting_point_y = -1; //Robot_config[1];
-    end_point_y = -1;//Robot_config[1]-1.5;
-    check_event = 0;
-    Line_Following_Control(velocity_input, starting_point_x, end_point_x, starting_point_y, end_point_y, check_event);
-
-    velocity_input = 0.3;
-    starting_point_x = 1.5;//Robot_config[0];
-    end_point_x = 1.5;//Robot_config[0]+2;
-    starting_point_y = -1; //Robot_config[1];
-    end_point_y = 1.5;//Robot_config[1]-1.5;
-    check_event = 0;
-    Line_Following_Control(velocity_input, starting_point_x, end_point_x, starting_point_y, end_point_y, check_event);
-
-    velocity_input = 0.3;
-    starting_point_x = 1.5;//Robot_config[0];
-    end_point_x = -1.5;//Robot_config[0]+2;
-    starting_point_y = 1.5; //Robot_config[1];
-    end_point_y = 1.5;//Robot_config[1]-1.5;
-    check_event = 0;
-    Line_Following_Control(velocity_input, starting_point_x, end_point_x, starting_point_y, end_point_y, check_event);
+        // strip beyond first comma
+        if (const char *end = strchr(begin, ','))
+        {
+            std::string column1(begin, end - begin);
+            std::cout << column1 << std::endl;
+        }
+    }
 */
     return 0;
 }

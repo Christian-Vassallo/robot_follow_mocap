@@ -22,7 +22,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_gensrv()
 
 #common commands for building c++ executables and libraries
-#rosbuild_add_library( src/API_Turtlebot.hpp )
+#rosbuild_add_library(src/API_Turtlebot.hpp )
 #target_link_libraries(${PROJECT_NAME} another_library)
 #rosbuild_add_boost_directories()
 #rosbuild_link_boost(${PROJECT_NAME} thread)
@@ -60,7 +60,6 @@ rosbuild_add_executable(eventcheck ${HDRS} ${SRCS3})
 rosbuild_add_executable(trackingcontrol ${HDRS} ${SRCS4})
 
 
-#target_link_libraries(robotcontrol ~/simulateur/lib/Linux/comm/libcomm_debug)
 
 #rosbuild_add_executable(event_check src/new_event_check.cpp)
 #rosbuild_add_executable(robot_rotation src/rotaterobot.cpp)
