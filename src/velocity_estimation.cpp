@@ -43,6 +43,7 @@
 #include "Robulab10Class.hpp"
 #include "trajectoryClass.hpp"
 #include "Motion_API.hpp"
+#include "tracking_API.hpp"
 
 #include <fstream>
 #include <algorithm>
@@ -71,6 +72,8 @@ int main(int argc, char **argv)
     Robulab10 Robot;
     Robot.establish_connection();
 
+    item_goal item1;
+
     std::vector<double> item_data_t;
     std::vector<double> item_data_tbef(3);
     std::vector<std::vector<double> > item_data;
@@ -81,16 +84,10 @@ int main(int argc, char **argv)
 
     // Initialization MoCap
     std::cout << "Bringing up.." << std::flush;
-    double timenow = time(NULL)+3;
+    double timenow = time(NULL)+0.1;
     while(time(NULL)<timenow){
         ros::spinOnce();
-        std::cout << ".3" << std::flush;
-        ros::Duration(1).sleep();
-        std::cout << ".2" << std::flush;
-        ros::Duration(1).sleep();
-        std::cout << ".1" << std::flush;
-        ros::Duration(1).sleep();
-        std::cout << ".." << std::flush;
+        ros::Duration(0.01).sleep();
     }
 
     // Starting to record motion if the object is visible
@@ -100,10 +97,11 @@ int main(int argc, char **argv)
 
         /// Take data from MoCap, tracking the Actor
         item_data_t.clear();
-        //item_data_t = _item_mocap.item_XY_YAW_configuration();
-        item_data_t.push_back(0+counter);         /// CONDIZIONE OFFLINE
-        item_data_t.push_back(0+2*counter);         /// CONDIZIONE OFFLINE
-        item_data_t.push_back(1);         /// CONDIZIONE OFFLINE
+        item_data_t = _item_mocap.item_XY_YAW_configuration();
+
+         /// item_data_t.push_back(0+counter);         /// CONDIZIONE OFFLINE
+         /// item_data_t.push_back(0+2*counter);         /// CONDIZIONE OFFLINE
+         /// item_data_t.push_back(1);         /// CONDIZIONE OFFLINE
 
         std::cout << "publishing actor" << item_data_t[1] << std::endl;
 
@@ -111,16 +109,16 @@ int main(int argc, char **argv)
 
         // Init Condition
 
-        //if(item_data_t[1]>-10.70 && item_data_t[0]>-4){
-        if(true){   /// CONDITION OFFLINE
+        if(item_data_t[1]>-10.70 && item_data_t[0]>-4){
+        /// if(true){   /// CONDITION OFFLINE
 
           item_data.push_back(item_data_t);
           counter++;
           std::cout << counter << std::endl;
 
           // End condition
-          //if(item_data_t[1]>-6.78 && item_data_t[0]>-4){
-          if(counter>1){ /// condizione offline
+          if(item_data_t[1]>-7.83){
+          /// if(counter>1){ /// condizione offline
               //-7.83 line blue
               std::cout << "EVENT" << std::endl;
               //Robot.move_robot(0,0);
@@ -175,10 +173,10 @@ int main(int argc, char **argv)
     double dt = 0.01;
 
     // Actor Path
-    double init_actor_line_x = 0;
-    double end_actor_line_x = MatlabData[0];
-    double init_actor_line_y = -1.44;
-    double end_actor_line_y = 4.5;      /// TO CHECK
+    double init_actor_line_x =  0;
+    double end_actor_line_x  =  MatlabData[0];
+    double init_actor_line_y = -6.5;
+    double end_actor_line_y  = -1.723;      /// TO CHECK
 
     // Compute the crossing point according to the velocity actor
     double s = fabs(end_actor_line_y - init_actor_line_y);
@@ -195,6 +193,7 @@ int main(int argc, char **argv)
     /// --- INSERIRE IF ELSE ACCORDING TO LEFT OR RIGHT ---- ////
     init_robot_line_x = end_robot_line_x+ObjVelocity*t;
 
+    std::cout << "percorso " << end_robot_line_x << " = " <<  ObjVelocity<< " * " << t << std::endl;
     std::cout << " l'attore si muove sulla linea x " << end_actor_line_x << std::endl;
     std::cout << " il robot dovrebbe partire da " << init_robot_line_x << " per arrivare a " << end_robot_line_x << std::endl;
     std::cout << " crossing point " << end_actor_line_x << " " << end_actor_line_y << std::endl;
@@ -219,9 +218,8 @@ int main(int argc, char **argv)
       //std::vector<int>::iterator it = kk;
      // virtualrobot_config.row(kk+1) = Vector3d(virtualrobot_config(kk,0)+ObjVelocity*dt, virtualrobot_config(kk,1), _THETA);
 
-      std::cout << " vai" << std::endl;
       virtualrobot_config_t.clear();
-      virtualrobot_config_t.push_back(virtualrobot_config2[virtualrobot_config2.size()-1][0] + +ObjVelocity*dt);
+      virtualrobot_config_t.push_back(virtualrobot_config2[virtualrobot_config2.size()-1][0] - ObjVelocity*dt);
       virtualrobot_config_t.push_back(virtualrobot_config2[virtualrobot_config2.size()-1][1]);
       virtualrobot_config_t.push_back(_THETA);
       virtualrobot_config2.push_back(virtualrobot_config_t);
@@ -234,10 +232,13 @@ int main(int argc, char **argv)
    // std::cout << virtualrobot_config << std::endl;
     std::cout << "Vel " << ObjVelocity << std::endl;
 
-    for(unsigned int kk=0; kk<=int(t/dt); ++kk)
-      std::cout << dt*kk << " - " << virtualrobot_config2[kk][0] << " " << virtualrobot_config2[kk][1] << " " << virtualrobot_config2[kk][2] << std::endl;
+    //for(unsigned int kk=0; kk<=int(t/dt); ++kk)
+   //   std::cout << dt*kk << " - " << virtualrobot_config2[kk][0] << " " << virtualrobot_config2[kk][1] << " " << virtualrobot_config2[kk][2] << std::endl;
 
     std::cout << " tempo " << t << std::endl;
+
+    // Track the virtual robot
+    item1.virtual_tracking_control(virtualrobot_config2);
 
     return 0;
 }

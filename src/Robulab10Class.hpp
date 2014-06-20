@@ -95,11 +95,11 @@ void Robulab10::move_robot(double lin_vel, double ang_vel){
 
     message = "[1] StartRobot";
     sendto(fd, message.c_str() , message.length(), 0, (struct sockaddr *)&remaddr, slen);
-    printf("Sending message %s\n", message.c_str());
+    //printf("Sending message %s\n", message.c_str());
 
     message = "[2] Drive " + commandvelocity.str();
     sendto(fd, message.c_str() , message.length(), 0, (struct sockaddr *)&remaddr, slen);
-    printf("Sending message %s\n", message.c_str());
+    //printf("Sending message %s\n", message.c_str());
 
 
 }

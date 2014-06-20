@@ -46,13 +46,21 @@ int main(int argc, char **argv)
     ros::NodeHandle _item_node;
     ros::Publisher _item_pub = _item_node.advertise<std_msgs::Float64MultiArray>("ObjData", 2000);
 
+
+
     item_goal item1;
-    Eigen::MatrixXd m;
-    m << 1, 2, 3,
-         4, 5, 6,
-         7, 8, 9;
+
+    std::vector<std::vector<double> > matrix;
+    std::vector<double> vec;
+    vec.push_back(0);
+    vec.push_back(1);
+    vec.push_back(2);
+    vec.push_back(3);
+
+    for(unsigned int i=0; i<8; i++)
+      matrix.push_back(vec);
 
     item1.set_name("head");
-    //item1.virtual_tracking_control(m);
+    item1.virtual_tracking_control(matrix);
 
 }
