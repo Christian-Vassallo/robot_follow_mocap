@@ -20,6 +20,7 @@
 #include <actionlib/client/simple_action_client.h>
 #include <time.h>
 #include <string.h>
+#include <stdlib.h>
 #include <eigen_conversions/eigen_msg.h>
 #include <Eigen/Cholesky>
 #include <Eigen/LU>
@@ -81,6 +82,30 @@ int main(int argc, char **argv)
     bool stop_flag = false;
     int counter = 0;
     double ObjVelocity;
+    double _MPD;
+    unsigned int iter_abs = 0;  // absolute iterator of the tries
+
+    std::ifstream  data("ordrepassage.csv");
+    std::vector<bool> robotmove;
+    std::vector<bool> robotLeftRight;
+    std::vector<double> MPDvector;
+
+        std::string line;
+        while(std::getline(data,line))
+        {
+            std::stringstream  lineStream(line);
+            std::string        cell;
+            std::string        subcell;
+            while(std::getline(lineStream,cell,','))
+            {
+              // You have a cell!!!!
+              robotmove.push_back(cell[0]=='Y');
+              robotLeftRight.push_back(cell[2]=='L');
+              subcell = cell.substr(4,8);
+              MPDvector.push_back(atof(subcell.c_str()));
+            }
+        }
+
 
     // Initialization MoCap
     std::cout << "Bringing up.." << std::flush;
@@ -89,6 +114,7 @@ int main(int argc, char **argv)
         ros::spinOnce();
         ros::Duration(0.01).sleep();
     }
+
 
     // Starting to record motion if the object is visible
     std::cout << "\nStart" << std::endl;
@@ -150,7 +176,6 @@ int main(int argc, char **argv)
 
     _item_pub.publish(item_data_msg);
 
-    //ObjVelocity = 1.4; /// OFFLINE DEFINITION
 
 
     // Receive Message from Matlab - Message structure:
@@ -170,7 +195,7 @@ int main(int argc, char **argv)
 
     // Extract the time needed by actor to arrive to the line
     double _THETA = -M_PI;
-    double dt = 0.01;
+    double dt = 0.009;
 
     // Actor Path
     double init_actor_line_x =  0;
@@ -178,25 +203,36 @@ int main(int argc, char **argv)
     double init_actor_line_y = -6.5;
     double end_actor_line_y  = -1.723;      /// TO CHECK
 
+    // Inserting MPD
+    //_MPD = MPDvector[iter_abs];
+    _MPD = 1.2;
+
     // Compute the crossing point according to the velocity actor
     double s = fabs(end_actor_line_y - init_actor_line_y);
-    double t = s / ObjVelocity;
+    double t = (s + _MPD) / ObjVelocity;
 
     // Robot Path
     double init_robot_line_x; // Value to compute
     double end_robot_line_x = end_actor_line_x;
     double init_robot_line_y = end_actor_line_y;
     double end_robot_line_y = end_actor_line_y;
+    double RobotVelocity = 1.4; // m/s
+    double offsetspace = 3.5;
+    double offsettime;
 
-
+    // Some offset to move the robot a little bit more
+    offsettime = offsetspace/RobotVelocity;
 
     /// --- INSERIRE IF ELSE ACCORDING TO LEFT OR RIGHT ---- ////
-    init_robot_line_x = end_robot_line_x+ObjVelocity*t;
+    init_robot_line_x = end_robot_line_x+RobotVelocity*t;
 
-    std::cout << "percorso " << end_robot_line_x << " = " <<  ObjVelocity<< " * " << t << std::endl;
+
+
+    std::cout << "percorso " << end_robot_line_x << " = " <<  RobotVelocity<< " * " << t << std::endl;
     std::cout << " l'attore si muove sulla linea x " << end_actor_line_x << std::endl;
     std::cout << " il robot dovrebbe partire da " << init_robot_line_x << " per arrivare a " << end_robot_line_x << std::endl;
-    std::cout << " crossing point " << end_actor_line_x << " " << end_actor_line_y << std::endl;
+    std::cout << "senza mpd - " << " il robot dovrebbe partire da " << end_actor_line_x+RobotVelocity*s/ObjVelocity << " per arrivare a " << end_actor_line_x << std::endl;
+    std::cout << " mpd " << _MPD << std::endl;
 
     std::vector<double> virtualrobot_config_t;
     std::vector<std::vector<double> > virtualrobot_config2;
@@ -214,12 +250,12 @@ int main(int argc, char **argv)
 
     // Initial Configuration
 
-    for(unsigned int kk=0; kk<=int(t/dt); ++kk){
+    for(unsigned int kk=0; kk<=(int(t/dt)+int(offsettime/dt)); ++kk){
       //std::vector<int>::iterator it = kk;
      // virtualrobot_config.row(kk+1) = Vector3d(virtualrobot_config(kk,0)+ObjVelocity*dt, virtualrobot_config(kk,1), _THETA);
 
       virtualrobot_config_t.clear();
-      virtualrobot_config_t.push_back(virtualrobot_config2[virtualrobot_config2.size()-1][0] - ObjVelocity*dt);
+      virtualrobot_config_t.push_back(virtualrobot_config2[virtualrobot_config2.size()-1][0] - RobotVelocity*dt);
       virtualrobot_config_t.push_back(virtualrobot_config2[virtualrobot_config2.size()-1][1]);
       virtualrobot_config_t.push_back(_THETA);
       virtualrobot_config2.push_back(virtualrobot_config_t);
@@ -229,16 +265,20 @@ int main(int argc, char **argv)
       virtualrobot_config_t.push_back(_THETA);
       virtualrobot_config2.push_back(virtualrobot_config_t);*/
     }
+
+    std::cout << "il robot arriva fino a " << virtualrobot_config2[virtualrobot_config2.size()-1][0] << std::endl;
+
    // std::cout << virtualrobot_config << std::endl;
     std::cout << "Vel " << ObjVelocity << std::endl;
 
-    //for(unsigned int kk=0; kk<=int(t/dt); ++kk)
-   //   std::cout << dt*kk << " - " << virtualrobot_config2[kk][0] << " " << virtualrobot_config2[kk][1] << " " << virtualrobot_config2[kk][2] << std::endl;
+   for(unsigned int kk=0; kk<=int(t/dt); ++kk)
+      std::cout << dt*kk << " - " << virtualrobot_config2[kk][0] << " " << virtualrobot_config2[kk][1] << " " << virtualrobot_config2[kk][2] << std::endl;
 
     std::cout << " tempo " << t << std::endl;
 
+    std::cout << robotLeftRight[iter_abs] << std::endl;
     // Track the virtual robot
-    item1.virtual_tracking_control(virtualrobot_config2);
+    item1.virtual_tracking_control_MPD(virtualrobot_config2, robotLeftRight[iter_abs]);
 
     return 0;
 }
