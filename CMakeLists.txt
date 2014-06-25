@@ -37,13 +37,12 @@ set(SRCS1
 set(SRCS2
     ./src/velocity_estimation.cpp)
 
-# Random staff
-set(SRCS3
-    ./src/new_event_check.cpp)
-
 # Tracking control
-set(SRCS4
+set(SRCS3
     ./src/tracking_control.cpp)
+
+set(SRCS4
+    ./src/manip_auto.cpp)
 
 set(HDRS
   ./src/turtlemotionclass.hpp
@@ -57,7 +56,7 @@ set(HDRS
 rosbuild_add_executable(robotcontrol ${HDRS} ${SRCS1})
 rosbuild_add_executable(velocitykalman ${HDRS} ${SRCS2})
 rosbuild_add_executable(eventcheck ${HDRS} ${SRCS3})
-rosbuild_add_executable(trackingcontrol ${HDRS} ${SRCS4})
+rosbuild_add_executable(manipRennes ${HDRS} ${SRCS4})
 
 
 

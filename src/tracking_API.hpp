@@ -57,7 +57,7 @@ int item_goal::virtual_tracking_control_MPD(std::vector<std::vector<double> > &v
 
     /// Definition of the virtual robot parameter
     vr = 1.4;   // vr will be computed
-    wr = 0;   // equal to zero : moving along a line
+    wr = 0;
 
     /// Definition of the parameters
     epsilon = 0.5;   // defined positive and constant
@@ -143,7 +143,7 @@ int item_goal::virtual_tracking_control_MPD(std::vector<std::vector<double> > &v
         /// u2 = wr - w
         v = - u1 + vr * cos(e3);
         w = - u2 + wr;
-        if (v>1.8)
+        if (v>2.5)
             v = 1.4;
 
         //v = vr * cos(e3) - e1;
@@ -159,18 +159,14 @@ int item_goal::virtual_tracking_control_MPD(std::vector<std::vector<double> > &v
         //std::cout << " ----------------------------------------- " << std::endl;
 
         /// Security Check
-        if(w>100 || v>10){
-            std::cout << "---- SECURITY STOP: omega too high, probably diverging---- " << std::endl;
-            return -1;
-        }
-        else{ /// MOVE!
+
             // Remember: ROB_POS indicates if the robot is in the left side (1) or right side (0) of the actor
             // Considering that the actor moves along Y line, left is negative and right is positive
-            if(RBT_POS==0){
+            if(RBT_POS==1){
                 if(xr<=x){
                     std::cout << "position v r" <<  xr << " "<< x << std::endl;
-                    std::cout << "FOLLLLLLLLLLLOWWW" << std::endl;
-                  Robot.move_robot(v, w);
+                    std::cout << "FOLLLLLLLLLLLOWWW RIGHT" << std::endl;
+                    Robot.move_robot(v, w);
                   vitesserobot.push_back(v);
                   }
                 else{
@@ -181,7 +177,7 @@ int item_goal::virtual_tracking_control_MPD(std::vector<std::vector<double> > &v
             else{ // if the robot start from left side, it is in the negative quadrant: farest means more negative
                 if(xr>=x){
                     std::cout << "position v r" <<  xr << " "<< x << std::endl;
-                    std::cout << "FOLLLLLLLLLLLOWWW" << std::endl;
+                    std::cout << "FOLLLLLLLLLLLOWWW LEFT" << std::endl;
                   Robot.move_robot(v, w);
                   vitesserobot.push_back(v);
                   }
@@ -191,7 +187,7 @@ int item_goal::virtual_tracking_control_MPD(std::vector<std::vector<double> > &v
                   std::cout << "virtual robot behind" << std::endl;
                   }
               }
-        }
+
 
         ros::Duration(0.01).sleep();
 
@@ -201,8 +197,8 @@ int item_goal::virtual_tracking_control_MPD(std::vector<std::vector<double> > &v
 
     Robot.move_robot(0, 0);
 
-    for(unsigned int pp=0; pp<vitesserobot.size();pp++)
-      std::cout << vitesserobot[pp] << std::endl;
+   // for(unsigned int pp=0; pp<vitesserobot.size();pp++)
+    //  std::cout << vitesserobot[pp] << std::endl;
 
     return 0;
 
